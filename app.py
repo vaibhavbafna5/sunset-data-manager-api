@@ -89,15 +89,18 @@ def say_hi():
     print(data)
     return 'hello'
 
+
+# initalize mongo client so we can write to DB
+client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0-stvht.mongodb.net/test?retryWrites=true&w=majority")
+db = client['ImageMetaData']
+image_collection = db['Images']
+
+
+
 @app.route("/process", methods=['GET', 'POST'])
 def process_data():
     data = None
     data = form_or_json()
-
-    # initalize mongo client so we can write to DB
-    client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0-stvht.mongodb.net/test?retryWrites=true&w=majority")
-    db = client['ImageMetaData']
-    image_collection = db['Images']
 
     data = data[:25]
 
