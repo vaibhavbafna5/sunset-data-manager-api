@@ -105,7 +105,7 @@ def process_data():
     data = None
     data = form_or_json()
 
-    data = data[:5]
+    data = data[:25]
 
     sourced_data = []
 
