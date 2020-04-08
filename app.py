@@ -95,6 +95,9 @@ client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0
 db = client['ImageMetaData']
 image_collection = db['Images']
 
+# load good images
+good_images = load_images_from_folder("good_images")
+
 
 
 @app.route("/process", methods=['GET', 'POST'])
@@ -107,7 +110,6 @@ def process_data():
     sourced_data = []
 
     # check images for similarity to the good image data
-    good_images = load_images_from_folder("good_images")
 
     for datum in data:
         image_url = datum['image_url']
