@@ -91,7 +91,9 @@ def check_image_quality(image_data):
         image = io.imread(image_url)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        if get_average_similarity(good_images, image):
+        duplicate = image_collection.find({'src_id': datum['src_id']})
+
+        if duplicate == None and get_average_similarity(good_images, image):
 
             print("here")
 
