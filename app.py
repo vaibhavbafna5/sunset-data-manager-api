@@ -135,7 +135,7 @@ def say_hi():
 @app.route("/", methods=['GET', 'POST'])
 def get_num_pics():
     count = str(image_collection.estimated_document_count())
-    return 'might just fuck around & be a goat named felicia <br/>' + count + ' images & counting ¯\_(ツ)_/¯'
+    return 'might just fuck around & be a goat named felicia - Tyler, the Creator<br/><br/>' + count + ' images & counting in our database ¯\_(ツ)_/¯'
 
 
 @app.route("/process", methods=['GET', 'POST'])
