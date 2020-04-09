@@ -5,6 +5,9 @@ from pymongo import MongoClient
 from bson import ObjectId
 from flask_cors import CORS
 
+from multiprocessing import Process
+
+from threading import Thread
 import gunicorn
 import datetime as dt
 import requests
@@ -80,43 +83,17 @@ def get_average_similarity(good_images, target_image):
     else:
         return False
 
-# --------------------------- END OF HELPER FUNCTIONS -------------------------
 
-
-@app.route("/hello", methods=['GET', 'POST'])
-def say_hi():
-    data = form_or_json()
-    print(data)
-    return 'hello'
-
-
-# initalize mongo client so we can write to DB
-client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0-stvht.mongodb.net/test?retryWrites=true&w=majority")
-db = client['ImageMetaData']
-image_collection = db['Images']
-
-# load good images
-good_images = load_images_from_folder("good_images")
-
-
-
-@app.route("/process", methods=['GET', 'POST'])
-def process_data():
-    data = None
-    data = form_or_json()
-
-    # data = data[:10]
-
-    sourced_data = []
-
-    # check images for similarity to the good image data
-
-    for datum in data:
+# multiprocessing helper function here 
+def check_image_quality(image_data):
+    for datum in image_data:
         image_url = datum['image_url']
         image = io.imread(image_url)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         if get_average_similarity(good_images, image):
+
+            print("here")
 
             # if the image checks out, get the sunset time
             lat = datum['latitude']
@@ -130,36 +107,53 @@ def process_data():
             response = requests.get(url = URL)
             datum['sunset'] = response.json()['results']['sunset']
 
+
             # write the image to DB
             resp = image_collection.insert_one(datum)
-            datum['_id'] = str(datum['_id'])
+            # datum['_id'] = str(datum['_id'])
 
-            # append to array so we can return it later
-            sourced_data.append(datum)
+            # # append to array so we can return it later
+            # sourced_data.append(datum)
 
-    # get sunset times for the images we like
-    # for datum in sourced_data:
-    #     lat = datum['latitude']
-    #     lng = datum['longitude']
-        
-    #     unix_time = datum['taken_at']
-    #     date = dt.datetime.utcfromtimestamp(unix_time).strftime("%Y-%m-%d")
-        
-    #     URL = "https://api.sunrise-sunset.org/json?lat=" + str(lat) +"&lng=" + str(lng) + "&date=" + str(date)
+# --------------------------- END OF HELPER FUNCTIONS -------------------------
 
-    #     response = requests.get(url = URL)
-    #     datum['sunset'] = response.json()['results']['sunset']
 
-    # # write to DB
-    # for datum in sourced_data:
-    #     resp = image_collection.insert_one(datum)
-    #     datum['_id'] = str(datum['_id'])
+# initalize mongo client so we can write to DB
+client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0-stvht.mongodb.net/test?retryWrites=true&w=majority")
+db = client['ImageMetaData']
+image_collection = db['Images']
 
-    print("HEY \n", sourced_data)
-    return jsonify(sourced_data)
+# load good images
+good_images = load_images_from_folder("good_images")
+
+@app.route("/hello", methods=['GET', 'POST'])
+def say_hi():
+    data = form_or_json()
+    print(data)
+    return 'hello'
+
+@app.route("/", methods=['GET', 'POST'])
+def get_num_pics():
+    count = image_collection.estimated_document_count()
+    return 'might fuck around & be a goat named felicia\n {count} images & counting ¯\_(ツ)_/¯'
+
+
+@app.route("/process", methods=['GET', 'POST'])
+def process_data():
+    data = None
+    data = form_or_json()
+
+    # starts a thread and returns
+    heavy_thread = Thread(
+        target=check_image_quality,
+        args=(data,),
+    )
+
+    heavy_thread.daemon = True
+    heavy_thread.start()
+
+    return 'working'
     
 
-
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000,)
