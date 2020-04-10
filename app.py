@@ -159,7 +159,13 @@ def get_logs():
     
     return log
 
-
+@app.route("/image-metadata", methods=['GET', 'POST'])
+def get_image_meta_data():
+    res = list(image_collection.find({}))
+    for item in res:
+        item['_id'] = str(item['_id'])
+        
+    return jsonify(res)
 
 @app.route("/process", methods=['GET', 'POST'])
 def process_data():
