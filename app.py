@@ -85,17 +85,18 @@ def get_average_similarity(good_images, target_image):
 
 
 # multiprocessing helper function here 
-def check_image_quality(image_data):
+def check_image_quality(data):
+    image_data = data['image_data']
+    user = data['user']
+
+    count = 0
+
     for datum in image_data:
         image_url = datum['image_url']
         image = io.imread(image_url)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        duplicate = image_collection.find({'src_id': datum['src_id']})
-
-        if duplicate == None and get_average_similarity(good_images, image):
-
-            print("here")
+        if get_average_similarity(good_images, image):
 
             # if the image checks out, get the sunset time
             lat = datum['latitude']
@@ -109,13 +110,18 @@ def check_image_quality(image_data):
             response = requests.get(url = URL)
             datum['sunset'] = response.json()['results']['sunset']
 
-
-            # write the image to DB
-            resp = image_collection.insert_one(datum)
-            # datum['_id'] = str(datum['_id'])
-
-            # # append to array so we can return it later
-            # sourced_data.append(datum)
+            duplicate = image_collection.find_one({'src_id': datum['src_id']})
+            if duplicate == None:
+                resp = image_collection.insert_one(datum)
+                count += 1
+                print("here")
+    
+    print(count)
+    logs_collection.insert_one({
+        'num_images_written': count,
+        'written_by': user,
+        'written_on': dt.datetime.now().strftime("%I:%M%p on %B %d, %Y")
+    })
 
 # --------------------------- END OF HELPER FUNCTIONS -------------------------
 
@@ -124,9 +130,11 @@ def check_image_quality(image_data):
 client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0-stvht.mongodb.net/test?retryWrites=true&w=majority")
 db = client['ImageMetaData']
 image_collection = db['Images']
+logs_collection = db['Logs']
 
 # load good images
 good_images = load_images_from_folder("good_images")
+
 
 @app.route("/hello", methods=['GET', 'POST'])
 def say_hi():
@@ -134,10 +142,23 @@ def say_hi():
     print(data)
     return 'hello'
 
+
 @app.route("/", methods=['GET', 'POST'])
 def get_num_pics():
     count = str(image_collection.estimated_document_count())
     return 'might just fuck around & be a goat named felicia - Tyler, the Creator<br/><br/>' + count + ' images & counting in our database ¯\_(ツ)_/¯'
+
+
+@app.route("/logs", methods=['GET', 'POST'])
+def get_logs():
+    res = logs_collection.find({}).sort("_id", -1)
+    res = list(res)
+    log = ""
+    for doc in res:
+        log += str(doc['num_images_written']) + ' images written by ' + doc['written_by'] + ' at ' + doc['written_on'] + "</br>"
+    
+    return log
+
 
 
 @app.route("/process", methods=['GET', 'POST'])
