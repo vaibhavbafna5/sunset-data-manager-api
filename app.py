@@ -164,7 +164,7 @@ def get_image_meta_data():
     res = list(image_collection.find({}))
     for item in res:
         item['_id'] = str(item['_id'])
-        
+
     return jsonify(res)
 
 @app.route("/process", methods=['GET', 'POST'])
@@ -181,7 +181,7 @@ def process_data():
     heavy_thread.daemon = True
     heavy_thread.start()
 
-    return 'working'
+    return 'things are working'
     
 
 if __name__ == '__main__':
