@@ -130,7 +130,7 @@ def check_image_quality(data):
 client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0-stvht.mongodb.net/test?retryWrites=true&w=majority")
 db = client['ImageMetaData']
 image_collection = db['Images_2']
-logs_collection = db['Logs']
+logs_collection = db['Logs_2']
 
 # load good images
 good_images = load_images_from_folder("good_images")
