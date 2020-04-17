@@ -123,6 +123,28 @@ def check_image_quality(data):
         'written_on': dt.datetime.now().strftime("%I:%M%p on %B %d, %Y")
     })
 
+# multiprocessing helper function here 
+def check_sunrise_image_quality(data):
+    image_data = data['image_data']
+    user = data['user']
+
+    count = 0
+
+    for datum in image_data:
+
+        duplicate = sunrise_image_collection.find_one({'src_id': datum['src_id']})
+        if duplicate == None:
+            resp = sunrise_image_collection.insert_one(datum)
+            count += 1
+            print("here")
+    
+    print(count)
+    sunrise_logs_collection.insert_one({
+        'num_images_written': count,
+        'written_by': user,
+        'written_on': dt.datetime.now().strftime("%I:%M%p on %B %d, %Y")
+    })
+
 # --------------------------- END OF HELPER FUNCTIONS -------------------------
 
 
@@ -131,6 +153,9 @@ client = MongoClient("mongodb+srv://sunset-data-manager-admin:sunset442@cluster0
 db = client['ImageMetaData']
 image_collection = db['Images_2']
 logs_collection = db['Logs_2']
+
+sunrise_image_collection = db['Sunrise_Images']
+sunrise_logs_collection = db['Sunrise_Logs']
 
 # load good images
 good_images = load_images_from_folder("good_images")
@@ -141,6 +166,11 @@ def say_hi():
     data = form_or_json()
     print(data)
     return 'hello'
+
+@app.route("/sunrise-info", methods=['GET', 'POST'])
+def get_num_sunrise_pics():
+    count = str(sunrise_image_collection.estimated_document_count())
+    return 'dance with my dawgs in the nighttime <br/><br/>' + count + ' images of sunrise & counting in our database ¯\_(ツ)_/¯'
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -166,6 +196,33 @@ def get_image_meta_data():
         item['_id'] = str(item['_id'])
 
     return jsonify(res)
+
+@app.route("/sunrise-process", methods=['GET', 'POST'])
+def process_sunrise_data():
+    data = None
+    data = form_or_json()
+
+    heavy_thread = Thread(
+        target=check_sunrise_image_quality,
+        args=(data,),
+    )
+
+    heavy_thread.daemon = True
+    heavy_thread.start()
+
+    return 'things are working'
+
+
+@app.route("/sunrise-logs", methods=['GET', 'POST'])
+def get_sunrise_logs():
+    res = sunrise_logs_collection.find({}).sort("_id", -1)
+    res = list(res)
+    log = ""
+    for doc in res:
+        log += str(doc['num_images_written']) + ' images written by ' + doc['written_by'] + ' at ' + doc['written_on'] + "</br>"
+    
+    return log
+
 
 @app.route("/process", methods=['GET', 'POST'])
 def process_data():
