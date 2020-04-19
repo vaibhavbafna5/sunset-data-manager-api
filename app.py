@@ -197,6 +197,14 @@ def get_image_meta_data():
 
     return jsonify(res)
 
+@app.route("/sunrise-image-metadata", methods=['GET', 'POST'])
+def get_sunrise_image_meta_data():
+    res = list(sunrise_image_collection.find({}))
+    for item in res:
+        item['_id'] = str(item['_id'])
+
+    return jsonify(res)
+
 @app.route("/sunrise-process", methods=['GET', 'POST'])
 def process_sunrise_data():
     data = None
